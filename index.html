@@ -953,6 +953,7 @@
     }
     .form-success.show { display: flex; align-items: center; gap: 10px; }
     .form-success svg { width: 20px; height: 20px; color: var(--brand-600); flex-shrink: 0; }
+    .form-card .btn:disabled { opacity: 0.7; cursor: wait; }
 
     /* ===================== FOOTER ===================== */
     footer {
@@ -1643,10 +1644,13 @@
       reveals.forEach((el) => el.classList.add('in'));
     }
 
-    /* ----- Form submit (demo) ----- */
+    /* ----- Form submit → Web3Forms (emails essajehangiri@gmail.com) ----- */
     const form = document.getElementById('trialForm');
     const success = document.getElementById('formSuccess');
-    form.addEventListener('submit', (e) => {
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const submitDefaultHtml = submitBtn.innerHTML;
+
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const name = form.name.value.trim();
       const phone = form.phone.value.trim();
@@ -1654,11 +1658,43 @@
         alert('Please fill in your full name and phone number.');
         return;
       }
-      // Demo: in production wire this to Formspree, Getform, Netlify Forms, or your backend.
-      success.classList.add('show');
-      form.reset();
-      success.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      setTimeout(() => success.classList.remove('show'), 8000);
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Sending…';
+
+      try {
+        const res = await fetch('https://api.web3forms.com/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({
+            access_key: '02febb03-de0c-4fb6-803e-84ca8df12b28',
+            subject: 'New Quran Trial Inquiry — ' + name,
+            from_name: 'Learn Quran With Ummah Essa Website',
+            name,
+            phone,
+            email: form.email.value.trim() || 'Not provided',
+            country: form.country.value.trim() || 'Not provided',
+            course: form.course.value,
+            preferred_teacher: form.preference.value,
+            student_type: form.type.value,
+            best_time: form.time.value,
+            message: form.message.value.trim() || 'No message'
+          })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.message || 'Submission failed');
+        }
+        success.classList.add('show');
+        form.reset();
+        success.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => success.classList.remove('show'), 8000);
+      } catch {
+        alert('Sorry, we could not send your inquiry. Please WhatsApp us at +92 306 5444488 or email essajehangiri@gmail.com.');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = submitDefaultHtml;
+      }
     });
   </script>
 </body>
